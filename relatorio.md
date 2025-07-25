@@ -1,31 +1,39 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 4 créditos restantes para usar o sistema de feedback AI.
+Você tem 3 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para JoaoFrois01:
 
 Nota final: **97.7/100**
 
-# Feedback para JoaoFrois01 🚓✨
+# Feedback para JoaoFrois01 🚔✨
 
-Olá, Joao! Primeiro, quero te parabenizar pelo excelente trabalho! 🎉 Sua API para o Departamento de Polícia está muito bem estruturada, com uma organização clara entre rotas, controllers e repositories. Isso mostra que você compreendeu muito bem a arquitetura modular que o desafio propôs. Seu uso do Express está muito bom, e as validações que você implementou nos controllers estão bem cuidadosas, garantindo a integridade dos dados. 👏
-
-Além disso, você conseguiu implementar alguns bônus importantes, como:
-
-- Filtros simples para casos por status e agente_id.
-- Endpoint para buscar casos por palavras-chave no título e descrição.
-- Ordenação e filtro de agentes por data de incorporação.
-
-Esses extras demonstram seu empenho em ir além do básico, o que é fantástico! 🚀
+Olá, João! Primeiro, quero te parabenizar pelo empenho e pelo excelente trabalho que você entregou nessa API para o Departamento de Polícia! 🎉 Seu código está muito bem organizado, com uma arquitetura clara e modular, e você implementou a maioria dos requisitos com muita qualidade. Isso é fundamental para projetos reais e escaláveis, e você mandou muito bem!
 
 ---
 
-## Vamos analisar juntos o ponto que precisa de atenção? 🕵️‍♂️
+## 🎯 Pontos Fortes e Conquistas Bônus
 
-### Problema detectado:  
-**"UPDATE: Recebe status code 400 ao tentar atualizar agente parcialmente com método PATCH e payload em formato incorreto"**
+- Você estruturou seu projeto exatamente como esperado, separando bem as rotas, controladores e repositórios, o que deixa o código limpo e fácil de manter.
+- As rotas dos agentes e casos estão todas implementadas, com os métodos HTTP corretos (GET, POST, PUT, PATCH, DELETE).
+- Você usou o `express.Router()` corretamente em cada arquivo de rota e importou-os no `server.js` de forma adequada.
+- O tratamento de erros está consistente, com respostas 400 para payloads inválidos e 404 para IDs inexistentes.
+- Implementou filtros simples para casos por status e agente, o que mostra que você foi além do básico! 👏
+- Também fez a filtragem parcial por agente_id e status, além de ordenar agentes por data de incorporação (mesmo que o teste tenha falhado em alguns casos, a base está lá).
+- O uso do Swagger para documentar a API está muito bem feito, com descrições claras e parâmetros bem definidos.
+- O uso do `moment` para validar datas e do `uuid` para gerar IDs únicos está correto e ajuda a garantir a integridade dos dados.
 
-Ao analisar seu código no controller `agentesController.js`, mais especificamente na função `updateAgenteParcial`, percebi que você está fazendo as validações parciais corretamente, verificando se cada campo está definido e se é válido antes de atualizar. Veja este trecho:
+---
+
+## 🔍 Onde o Código Pode Melhorar (Análise Detalhada)
+
+### 1. Falha na validação parcial do método PATCH para agentes
+
+Você recebeu um feedback apontando que ao tentar atualizar parcialmente um agente com um payload mal formatado, a API deveria retornar status 400, mas isso não aconteceu.
+
+Ao analisar seu método `updateAgenteParcial` no arquivo `controllers/agentesController.js`, percebi que você já tem validações parciais para os campos `nome`, `dataDeIncorporacao` e `cargo`. No entanto, o teste falhou porque, provavelmente, seu código não está tratando corretamente alguns casos de payload inválido, como passar um campo vazio ou com valor inválido.
+
+Por exemplo, veja esse trecho do seu código:
 
 ```js
 if (nome !== undefined) {
@@ -36,35 +44,7 @@ if (nome !== undefined) {
 }
 ```
 
-E o mesmo para `dataDeIncorporacao` e `cargo`. Isso está ótimo! 👍
-
-### Mas... qual pode ser a causa do problema?
-
-O teste que falhou indica que o servidor não está retornando o status 400 quando o payload do PATCH está em formato incorreto. Isso geralmente significa que a validação não está cobrindo todos os casos ou que o erro não está sendo detectado quando deveria.
-
-**Ao investigar o código, percebi que a validação para `dataDeIncorporacao` no PATCH está diferente da do POST/PUT.** No POST, você usa o `moment` para validar se a data está no formato correto e se não está no futuro:
-
-```js
-const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
-if (!dataDeIncorporacao || !dataFormatada.isValid() || dataFormatada.isAfter(moment()))
-    return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-```
-
-Porém, no PATCH, você só verifica se a data é válida e se não está no futuro, mas não verifica se o campo está vazio (string vazia), o que pode causar uma falha de validação silenciosa:
-
-```js
-if (dataDeIncorporacao !== undefined) {
-    const dataFormatada = moment(dataDeIncorporacao, "YYYY-MM-DD", true);
-    if (!dataFormatada.isValid() || dataFormatada.isAfter(moment())) {
-        return res.status(400).json(helpError.ErrorMessage(400, "dataDeIncorporacao"));
-    }
-    camposAtualizados.dataDeIncorporacao = dataDeIncorporacao;
-}
-```
-
-Se o usuário enviar uma string vazia `""` para `dataDeIncorporacao`, o `moment` pode considerar inválido, mas você não está tratando o caso de um valor vazio explicitamente para os outros campos (`nome` e `cargo`) você sim trata.
-
-**Sugestão:** Acrescente a validação para garantir que o campo não seja vazio (nem espaços em branco) antes de validar a data. Algo assim:
+Esse código está correto para validar se o campo `nome` está presente e não vazio. Porém, para o campo `dataDeIncorporacao`, você faz validação de formato e data futura, o que é ótimo:
 
 ```js
 if (dataDeIncorporacao !== undefined) {
@@ -79,26 +59,89 @@ if (dataDeIncorporacao !== undefined) {
 }
 ```
 
-Assim, você garante que uma string vazia também gere erro 400, como esperado.
+**Possível causa raiz:** O problema pode estar ocorrendo quando o payload enviado para PATCH inclui campos com tipos incorretos ou valores inesperados (ex: números em vez de strings, ou strings vazias com espaços). Ou ainda, se o payload estiver completamente vazio, seu código não está tratando esse caso explicitamente.
+
+**Sugestão de melhoria:** Inclua uma verificação para garantir que o payload do PATCH não esteja vazio e que os campos recebidos sejam do tipo esperado. Por exemplo:
+
+```js
+if (Object.keys(req.body).length === 0) {
+    return res.status(400).json({ message: "Payload vazio não é permitido para atualização parcial." });
+}
+```
+
+Além disso, para cada campo, você pode reforçar a validação do tipo:
+
+```js
+if (nome !== undefined) {
+    if (typeof nome !== 'string' || !nome.trim()) {
+        return res.status(400).json(helpError.ErrorMessage(400, "nome"));
+    }
+    camposAtualizados.nome = nome.trim();
+}
+```
+
+Isso evita que um valor como `""` (string vazia) ou um número cause problemas.
 
 ---
 
-## Sobre os testes bônus que não passaram
+### 2. Falhas nos testes bônus de filtragem e mensagens de erro customizadas
 
-Você também teve alguns pontos em filtros mais avançados e mensagens de erro customizadas que não foram totalmente aceitos. Mas analisando seu código, vi que:
+Você implementou parte dos filtros e da filtragem por agente e status, mas alguns filtros mais avançados e mensagens de erro personalizadas não passaram.
 
-- Você implementou o endpoint para buscar o agente responsável por um caso (`getAgenteByCasoId`), mas o teste bônus de filtragem avançada não passou.  
-- A filtragem por palavras-chave no título e descrição está implementada no endpoint `/casos/search` e parece correta.  
-- A ordenação por data de incorporação em agentes está lá, mas talvez o teste espere um comportamento mais robusto (por exemplo, ordenar também por cargo quando as datas forem iguais, ou aceitar mais opções de sort).  
-- As mensagens de erro customizadas estão sendo usadas, mas talvez o formato esperado pelo teste seja um pouco diferente do que você retornou.
+Ao analisar seu código, vejo que:
 
-**Minha dica:** revise os detalhes dos formatos das mensagens de erro e as regras de filtragem solicitadas no enunciado para garantir que estejam 100% alinhadas. Às vezes, um pequeno detalhe no JSON de resposta faz diferença.
+- O filtro de ordenação por data de incorporação no controlador de agentes está presente e funciona, mas pode ser melhorado para tratar ordenação crescente e decrescente com mais clareza.
+  
+  Veja seu código para sort:
+
+  ```js
+  if (req.query.sort) {
+      if (req.query.sort[0] === "-")
+          result = result.sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao)).reverse();
+      else
+          result = result.sort((a, b) => a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao));
+  }
+  ```
+
+  Aqui você inverte a ordenação se o parâmetro começa com "-", o que está correto, mas pode ser confuso para manutenção. Uma alternativa mais clara seria:
+
+  ```js
+  if (req.query.sort) {
+      const direction = req.query.sort.startsWith('-') ? -1 : 1;
+      const field = req.query.sort.replace('-', '');
+      if (field === 'dataDeIncorporacao') {
+          result = result.sort((a, b) => direction * a.dataDeIncorporacao.localeCompare(b.dataDeIncorporacao));
+      }
+  }
+  ```
+
+- Para a filtragem por palavras-chave no título e descrição dos casos (`/casos/search`), seu código está correto, porém, talvez o teste espere que a busca seja case-insensitive e que trate espaços e caracteres especiais com mais robustez. Seu código:
+
+  ```js
+  if (req.query.q)
+      return res.status(200).json(casos.filter(c => c.titulo.toLowerCase().includes(req.query.q.toLowerCase()) || c.descricao.toLowerCase().includes(req.query.q.toLowerCase())));
+  ```
+
+  Isso está ótimo, mas vale a pena garantir que `req.query.q` não seja vazio ou só espaços.
+
+- Sobre as mensagens de erro customizadas, seu arquivo `utils/errorHandler.js` não foi enviado aqui, mas é importante garantir que as mensagens estejam padronizadas e que retornem o status correto junto com uma mensagem clara. Por exemplo:
+
+  ```js
+  function ErrorMessage(status, campo, valor) {
+      return {
+          status,
+          message: `O campo '${campo}' está inválido${valor ? `: ${valor}` : ''}.`
+      }
+  }
+  ```
+
+  Verifique se você está usando essas funções em todos os pontos de validação, inclusive para casos e agentes.
 
 ---
 
-## Observação sobre a estrutura do projeto
+### 3. Organização e Estrutura do Projeto
 
-Sua estrutura está perfeita e segue o padrão esperado:
+Parabéns! Sua estrutura de arquivos está correta e segue o padrão esperado:
 
 ```
 server.js
@@ -110,40 +153,47 @@ utils/
 package.json
 ```
 
-Parabéns por manter a organização! Isso facilita muito a manutenção e a escalabilidade do projeto. 👏
+Isso facilita muito a manutenção e extensibilidade do seu projeto. Continue assim! 😉
 
 ---
 
-## Recomendações de aprendizado para você que quer avançar ainda mais:
+## 💡 Recomendações de Aprendizado
 
-- Para entender melhor a manipulação e validação de dados em APIs RESTful com Express, recomendo fortemente este vídeo:  
-https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
-Ele explica como validar dados e lidar com erros de forma robusta.
+Para fortalecer ainda mais seu conhecimento e corrigir os pontos acima, recomendo fortemente os seguintes recursos:
 
-- Para aprofundar no roteamento e organização das rotas com `express.Router()`, veja a documentação oficial:  
-https://expressjs.com/pt-br/guide/routing.html
+- **Validação de dados e tratamento de erros na API**  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/400  
+  https://developer.mozilla.org/pt-BR/docs/Web/HTTP/Status/404  
+  https://youtu.be/yNDCRAz7CM8?si=Lh5u3j27j_a4w3A_  
 
-- Para garantir que o status code 400 esteja sendo usado corretamente e entender o protocolo HTTP, este vídeo é muito didático:  
-https://youtu.be/RSZHvQomeKE
+- **Manipulação de arrays e filtros com JavaScript**  
+  https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI  
 
-- Por fim, para manipulação de arrays e filtros, que você usou bastante, vale a pena revisar este vídeo para dominar métodos como `filter`, `find` e `sort`:  
-https://youtu.be/glSgUKA5LjE?si=t9G2NsC8InYAU9cI
+- **Express.js - Roteamento e organização de projeto**  
+  https://expressjs.com/pt-br/guide/routing.html  
+  https://youtu.be/bGN_xNc4A1k?si=Nj38J_8RpgsdQ-QH  
 
----
-
-## Resumo dos principais pontos para você focar:
-
-- [ ] No PATCH `/agentes/:id`, valide explicitamente que campos string não estejam vazios (ex: `dataDeIncorporacao`), para garantir retorno 400 quando o payload estiver mal formatado.  
-- [ ] Reveja os detalhes das mensagens de erro customizadas para garantir que o formato JSON esteja exatamente como esperado (isso ajuda nos bônus).  
-- [ ] Confira se os filtros e ordenações avançadas (ex: ordenação por data de incorporação com sort asc/desc e filtros combinados) estão cobrindo todos os casos solicitados.  
-- [ ] Continue mantendo a organização do seu projeto, que está exemplar!  
-- [ ] Explore os recursos recomendados para aprofundar seu conhecimento em validação, roteamento e manipulação de dados.
+- **HTTP status codes e boas práticas em APIs REST**  
+  https://youtu.be/RSZHvQomeKE?si=PSkGqpWSRY90Ded5  
 
 ---
 
-Joao, seu projeto está muito sólido! 🏆 Com esses ajustes finos, você vai deixar sua API ainda mais robusta e profissional. Continue nessa pegada, porque você está no caminho certo! Se precisar, estou aqui para ajudar a destravar qualquer dúvida. 🚀💪
+## 📋 Resumo Final - Onde Focar Agora
 
-Um grande abraço e sucesso! 👮‍♂️✨
+- **Reforce a validação no método PATCH para agentes**, garantindo que payloads vazios ou com campos mal formatados retornem status 400.  
+- **Aprimore a filtragem e ordenação**, especialmente para agentes por data de incorporação, deixando a lógica mais clara e robusta.  
+- **Garanta que as mensagens de erro personalizadas estejam padronizadas e usadas em todos os pontos de validação**, tanto para agentes quanto para casos.  
+- **Valide melhor as query strings e parâmetros opcionais**, cuidando de casos como strings vazias ou espaços.  
+- Continue mantendo sua estrutura modular e limpa, que está excelente!  
+
+---
+
+João, seu trabalho está muito próximo da perfeição! Com esses ajustes, sua API vai ficar ainda mais robusta e profissional. Continue nessa pegada, estudando e aplicando boas práticas. Estou aqui torcendo pelo seu sucesso! 🚀👮‍♂️
+
+Se precisar de ajuda para implementar as melhorias, só chamar! 😉
+
+Abraços e bons códigos!  
+Seu Code Buddy 💙
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
